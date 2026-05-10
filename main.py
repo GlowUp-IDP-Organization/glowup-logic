@@ -3,21 +3,30 @@ from pydantic import BaseModel
 
 app = FastAPI(title="GlowUp Logic Service")
 
-# Definim cum arată datele pe care le așteptăm de la utilizator
 class RoutineRequest(BaseModel):
     ingredients: list[str]
 
-# Endpoint de test pentru starea serviciului
 @app.get("/health")
 def health_check():
-    return {"status": "Logic Service is running and ready!"}
+    return {"status": "Logic Service is ready!"}
 
-# Endpoint-ul principal 
 @app.post("/check-routine")
 def check_routine(request: RoutineRequest):
-    # Deocamdată returnăm un răspuns de succes fals, logica o facem pentru Etapa 3
+    ingredients = [i.lower() for i in request.ingredients]
+
+    # Verificăm incompatibilitatea principală: Retinol + Acizi Exfolianți
+    has_retinol = any("retinol" in i for i in ingredients)
+    has_acids = any(acid in i for i in ingredients for acid in ["aha", "bha", "acid glicolic", "acid salicilic"])
+
+    if has_retinol and has_acids:
+        return {
+            "safe": False,
+            "warning": "ALERTA: Combinarea Retinolului cu acizi AHA/BHA in aceeasi sesiune poate provoca iritatii severe si compromiterea barierei cutanate!",
+            "ingredients_analyzed": request.ingredients
+        }
+
     return {
-        "message": "Routine checked successfully",
         "safe": True,
+        "message": "Rutina este sigura. Ingredientele sunt compatibile.",
         "ingredients_analyzed": request.ingredients
     }
