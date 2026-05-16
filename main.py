@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+import requests
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI(title="GlowUp Logic Service")
@@ -30,3 +31,21 @@ def check_routine(request: RoutineRequest):
         "message": "Rutina este sigura. Ingredientele sunt compatibile.",
         "ingredients_analyzed": request.ingredients
     }
+
+@app.get("/analyze-all")
+def analyze_all_products():
+    try:
+        # Python suna la adresa interna a containerului IO (pe portul 3000)
+        response = requests.get("http://glowup_io:3000/products")
+        response.raise_for_status() # Verifica daca a raspuns cu succes (200 OK)
+        
+        data = response.json()
+        products = data.get("data", [])
+        
+        return {
+            "message": f"Succes! Am preluat {len(products)} produse direct de la IO MS.",
+            "database_items": products
+        }
+    except requests.exceptions.RequestException as e:
+        # Aici facem Error Handling ca la carte
+        raise HTTPException(status_code=500, detail=f"Eroare severa la comunicarea cu IO Service: {str(e)}")
